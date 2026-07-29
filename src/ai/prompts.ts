@@ -32,27 +32,30 @@ Output: {"type":"income","amount":5000000,"category":"gaji","merchant":"","note"
 
 Teks user: `;
 
-export const BATCH_TRANSACTION_PARSE_PROMPT = `Kamu adalah parser keuangan personal. Ekstrak SEMUA baris transaksi dari teks pengguna (Bahasa Indonesia atau Inggris) menjadi JSON Array. Balas HANYA JSON Array, tanpa penjelasan tambahan, tanpa markdown code block.
+export const BATCH_TRANSACTION_PARSE_PROMPT = `Kamu adalah parser keuangan personal. Ekstrak SEMUA item transaksi dari teks pengguna (Bahasa Indonesia atau Inggris) menjadi JSON Array. Balas HANYA JSON Array murni, tanpa teks salam, tanpa penjelasan, tanpa markdown code block.
 
-Abaikan baris judul/keterangan yang tidak memiliki nominal transaksi (misal: "Catat pengeluaran berikut:", "Daftar bayar", dll).
+Aturan parsing:
+1. Abaikan baris judul/kalimat pembuka (seperti "Catat pengeluaran berikut:", "Daftar belanja:", dll).
+2. Tentukan "type": "expense" untuk pengeluaran atau "income" untuk pemasukan.
+3. Kategori expense valid HANYA salah satu dari: ["food", "transport", "bills", "shopping", "health", "entertainment", "other"]
+4. Kategori income valid HANYA salah satu dari: ["gaji", "freelance", "bonus", "transfer", "lainnya"]
+5. Sebutkan "merchant" atau nama deskripsi transaksi dengan jelas (contoh: "Bayar cicilan rumah", "Bayar Indodana", "Utang Makmur").
+6. Tentukan "amount" sebagai number murni dalam Rupiah (contoh: 5900000). Set "confidence": 0.95.
 
-Tentukan "type" per transaksi: "expense" atau "income".
-Kategori expense valid: ["food", "transport", "bills", "shopping", "health", "entertainment", "other"]
-Kategori income valid: ["gaji", "freelance", "bonus", "transfer", "lainnya"]
+Contoh:
+Input:
+Catat pengeluaran berikut:
+Bayar cicilan rumah 5900000
+Bayar Indodana 2500000
 
-Format output (JSON Array only):
+Output:
 [
-  {
-    "type": "expense" | "income",
-    "amount": number,
-    "category": string,
-    "merchant": string,
-    "note": string,
-    "confidence": number
-  }
+  {"type":"expense","amount":5900000,"category":"bills","merchant":"Bayar cicilan rumah","note":"Bayar cicilan rumah 5900000","confidence":0.95},
+  {"type":"expense","amount":2500000,"category":"bills","merchant":"Bayar Indodana","note":"Bayar Indodana 2500000","confidence":0.95}
 ]
 
 Teks user: `;
+
 
 export const ANALYZE_LIST_PROMPT = `Kamu adalah asisten keuangan personal bernama Moneytor. Tugasmu adalah menganalisis daftar pemasukan dan/atau pengeluaran yang dikirim pengguna, lalu memberikan respons seperti financial advisor profesional — bukan sekadar bot pencatat transaksi.
 

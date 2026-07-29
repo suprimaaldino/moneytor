@@ -34,7 +34,7 @@ export class GeminiKeyPool {
 
       try {
         const client = new GoogleGenerativeAI(this.keys[this.activeIndex]);
-        const model = client.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+        const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(prompt);
         await incrementKeyUsage(keyLabel);
         return result.response.text();

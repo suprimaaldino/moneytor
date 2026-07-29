@@ -30,8 +30,11 @@ export function createMessageHandler(pool: GeminiKeyPool) {
       const multiParsed = await parseMultiTransactions(input, pool);
       const validItems = multiParsed.filter(
         (t): t is ParsedTransaction & { amount: number } =>
-          t.amount !== null && t.amount > 0 && t.confidence >= 0.8 && t.category !== 'unclear'
+          t.amount !== null && t.amount > 0 && t.confidence >= 0.5 && t.category !== 'unclear'
       );
+
+
+
 
       if (validItems.length > 0) {
         let totalAmount = 0;
