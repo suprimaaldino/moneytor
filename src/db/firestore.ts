@@ -2,10 +2,11 @@ import 'dotenv/config';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const privateKey = (process.env.FIREBASE_PRIVATE_KEY ?? '')
-  .replace(/\\n/g, '\n')
-  .replace(/^"/, '')
-  .replace(/"$/, '');
+const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY ?? '';
+const privateKey = rawPrivateKey
+  .trim()
+  .replace(/^["']|["']$/g, '')
+  .replace(/\\n/g, '\n');
 
 if (!getApps().length) {
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {

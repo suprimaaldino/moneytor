@@ -28,5 +28,11 @@ bot.command('link', linkCommand);
 bot.on('message:text', createMessageHandler(geminiPool));
 
 if (process.env.NODE_ENV !== 'production') {
-  bot.start().catch((error) => console.error('Bot polling failed:', error));
+  console.log('Bot Moneytor is starting in polling mode...');
+  bot.start()
+    .then(() => console.log('Bot stopped polling.'))
+    .catch((error) => console.error('Bot polling failed:', error));
+} else {
+  console.log('Bot is in production mode (webhook). Polling skipped.');
 }
+

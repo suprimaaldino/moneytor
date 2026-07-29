@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   getKeyState,
   incrementKeyUsage,
@@ -7,10 +6,13 @@ import {
 
 export class AllKeysExhaustedError extends Error {
   constructor() {
-    super('All Gemini API keys are exhausted for today');
+    super('All API keys are exhausted for today');
     this.name = 'AllKeysExhaustedError';
   }
 }
+
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:1.5b';
 
 export class GeminiKeyPool {
   private readonly keys: string[];
@@ -18,7 +20,7 @@ export class GeminiKeyPool {
 
   constructor(keys: string[]) {
     this.keys = keys.map((key) => key.trim()).filter(Boolean);
-    if (this.keys.length === 0) throw new Error('At least one Gemini API key is required');
+    if (this.keys.length === 0) this.keys.push('ollama-local');
   }
 
   async callWithFailover(prompt: string): Promise<string> {
@@ -27,24 +29,41 @@ export class GeminiKeyPool {
       await resetKeyIfNewDay(keyLabel);
       const state = await getKeyState(keyLabel);
 
-      if (state.requestCount >= 1400) {
+      if (state.requestCount >= 5000) {
         this.moveToNextKey();
         continue;
       }
 
-      try {
-        const client = new GoogleGenerativeAI(this.keys[this.activeIndex]);
-        const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const result = await model.generateContent(prompt);
-        await incrementKeyUsage(keyLabel);
-        return result.response.text();
-      } catch (error) {
-        if (!this.isRateLimitError(error)) {
-          console.error('callWithFailover error:', error);
-          throw error;
+      for (let retry = 0; retry < 3; retry += 1) {
+        try {
+          const response = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: OLLAMA_MODEL,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.1,
+              stream: false,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Ollama API error ${response.status}: ${await response.text()}`);
+          }
+
+          const data = (await response.json()) as {
+            choices: Array<{ message: { content: string } }>;
+          };
+          await incrementKeyUsage(keyLabel);
+          return data.choices[0]?.message?.content ?? '';
+        } catch (error) {
+          console.warn(`Ollama request failed (attempt ${retry + 1}), retrying in ${(retry + 1) * 2}s...`);
+          console.error(error);
+          await new Promise((r) => setTimeout(r, (retry + 1) * 2000));
         }
-        this.moveToNextKey();
       }
+
+      this.moveToNextKey();
     }
 
     throw new AllKeysExhaustedError();
@@ -54,9 +73,7 @@ export class GeminiKeyPool {
     this.activeIndex = (this.activeIndex + 1) % this.keys.length;
   }
 
-  private isRateLimitError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false;
-    const candidate = error as { status?: number; message?: string };
-    return candidate.status === 429 || candidate.message?.includes('429') === true;
+  private isRateLimitError(_error: unknown): boolean {
+    return false;
   }
 }
