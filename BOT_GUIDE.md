@@ -138,6 +138,37 @@ Balas dengan nominal, misalnya:
 
 Jika kategori tidak jelas, bot akan meminta kategori yang valid.
 
+## Analisis daftar keuangan dengan AI
+
+Kirim daftar pemasukan dan pengeluaran dalam format tabel, bot akan memberikan analisis finansial lengkap dengan AI.
+
+Contoh format:
+
+```text
+Rincian Pengeluaran
+Keterangan     Nominal
+Rumah          Rp5.900.000
+Indodana       Rp2.500.000
+Makanan        Rp1.200.000
+Transportasi   Rp850.000
+Total Pengeluaran  Rp10.450.000
+
+Ringkasan
+Keterangan     Nominal
+Pendapatan     Rp19.000.000
+Pengeluaran    Rp10.450.000
+```
+
+Bot akan membalas dengan kartu ringkasan yang mencakup:
+
+- Ringkasan finansial (pendapatan, pengeluaran, selisih)
+- 3 pengeluaran terbesar
+- Deteksi cicilan dan utang
+- Peringatan keuangan otomatis
+- AI insight berdasarkan data
+- Rekomendasi personal
+- Opsi aksi lanjutan
+
 ## Tips penggunaan
 
 - Selalu sertakan nominal dalam pesan transaksi.
