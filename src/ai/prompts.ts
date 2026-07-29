@@ -32,6 +32,28 @@ Output: {"type":"income","amount":5000000,"category":"gaji","merchant":"","note"
 
 Teks user: `;
 
+export const BATCH_TRANSACTION_PARSE_PROMPT = `Kamu adalah parser keuangan personal. Ekstrak SEMUA baris transaksi dari teks pengguna (Bahasa Indonesia atau Inggris) menjadi JSON Array. Balas HANYA JSON Array, tanpa penjelasan tambahan, tanpa markdown code block.
+
+Abaikan baris judul/keterangan yang tidak memiliki nominal transaksi (misal: "Catat pengeluaran berikut:", "Daftar bayar", dll).
+
+Tentukan "type" per transaksi: "expense" atau "income".
+Kategori expense valid: ["food", "transport", "bills", "shopping", "health", "entertainment", "other"]
+Kategori income valid: ["gaji", "freelance", "bonus", "transfer", "lainnya"]
+
+Format output (JSON Array only):
+[
+  {
+    "type": "expense" | "income",
+    "amount": number,
+    "category": string,
+    "merchant": string,
+    "note": string,
+    "confidence": number
+  }
+]
+
+Teks user: `;
+
 export const ANALYZE_LIST_PROMPT = `Kamu adalah asisten keuangan personal bernama Moneytor. Tugasmu adalah menganalisis daftar pemasukan dan/atau pengeluaran yang dikirim pengguna, lalu memberikan respons seperti financial advisor profesional — bukan sekadar bot pencatat transaksi.
 
 ========================================

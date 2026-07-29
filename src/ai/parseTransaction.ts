@@ -1,5 +1,5 @@
 import type { ParsedTransaction } from '../types/index.js';
-import { TRANSACTION_PARSE_PROMPT } from './prompts.js';
+import { BATCH_TRANSACTION_PARSE_PROMPT, TRANSACTION_PARSE_PROMPT } from './prompts.js';
 import { validateParsedTransaction } from '../utils/validation.js';
 import type { GeminiKeyPool } from './geminiPool.js';
 
@@ -26,3 +26,20 @@ export async function parseTransaction(
     return fallback;
   }
 }
+
+export async function parseMultiTransactions(
+  text: string,
+  pool: GeminiKeyPool,
+): Promise<ParsedTransaction[]> {
+  try {
+    const response = await pool.callWithFailover(`${BATCH_TRANSACTION_PARSE_PROMPT}${text}`);
+    const json = response.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(validateParsedTransaction);
+  } catch (error) {
+    console.error('parseMultiTransactions error:', error);
+    return [];
+  }
+}
+

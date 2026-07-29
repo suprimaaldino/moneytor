@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseTransaction } from '../src/ai/parseTransaction.js';
+import { parseMultiTransactions, parseTransaction } from '../src/ai/parseTransaction.js';
 import { validateParsedTransaction, isValidExpenseCategory } from '../src/utils/validation.js';
 
 describe('parseTransaction', () => {
@@ -17,7 +17,20 @@ describe('parseTransaction', () => {
     expect(isValidExpenseCategory('invalid')).toBe(false);
     expect(validateParsedTransaction({ type: 'expense', amount: 1000, category: 'invalid', merchant: '', note: '', confidence: 1 })).toBe(false);
   });
+
+  it('parses multi-line batch transaction response', async () => {
+    const json = JSON.stringify([
+      { type: 'expense', amount: 5900000, category: 'bills', merchant: 'Bayar cicilan rumah', note: '', confidence: 0.95 },
+      { type: 'expense', amount: 2500000, category: 'bills', merchant: 'Bayar Indodana', note: '', confidence: 0.95 },
+    ]);
+    const pool = { callWithFailover: vi.fn().mockResolvedValue(json) };
+    const res = await parseMultiTransactions('Catat pengeluaran berikut:\nBayar cicilan rumah 5900000\nBayar Indodana 2500000', pool as never);
+    expect(res).toHaveLength(2);
+    expect(res[0]).toMatchObject({ amount: 5900000, merchant: 'Bayar cicilan rumah' });
+    expect(res[1]).toMatchObject({ amount: 2500000, merchant: 'Bayar Indodana' });
+  });
 });
+
 
 describe('GeminiKeyPool', () => {
   beforeEach(() => vi.resetModules());

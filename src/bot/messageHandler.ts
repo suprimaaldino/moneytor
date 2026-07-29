@@ -3,9 +3,9 @@ import { createExpense } from '../db/expenses.js';
 import { createIncome } from '../db/income.js';
 import { getCachedCategory, upsertMerchantCache } from '../db/merchantCache.js';
 import { analyzeExpenseList } from '../ai/analyzeList.js';
-import { parseTransaction } from '../ai/parseTransaction.js';
+import { parseMultiTransactions, parseTransaction } from '../ai/parseTransaction.js';
 import type { GeminiKeyPool } from '../ai/geminiPool.js';
-import type { ExpenseCategory, IncomeCategory } from '../types/index.js';
+import type { ExpenseCategory, IncomeCategory, ParsedTransaction } from '../types/index.js';
 import { getWibMonth } from '../utils/dateHelpers.js';
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -24,6 +24,61 @@ export function createMessageHandler(pool: GeminiKeyPool) {
     const userId = String(ctx.from?.id ?? '');
     const input = ctx.session.pendingText ? `${ctx.session.pendingText} ${text}` : text;
     ctx.session.pendingText = undefined;
+
+    const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      const multiParsed = await parseMultiTransactions(input, pool);
+      const validItems = multiParsed.filter(
+        (t): t is ParsedTransaction & { amount: number } =>
+          t.amount !== null && t.amount > 0 && t.confidence >= 0.8 && t.category !== 'unclear'
+      );
+
+      if (validItems.length > 0) {
+        let totalAmount = 0;
+        const summaryLines: string[] = [];
+
+        for (const item of validItems) {
+          totalAmount += item.amount;
+          if (item.type === 'income') {
+            await createIncome({
+              amount: item.amount,
+              source: item.category as IncomeCategory,
+              note: item.note || item.merchant,
+              createdAt: Timestamp.now(),
+              month: getWibMonth(),
+              telegramUserId: userId,
+            });
+            summaryLines.push(`• ${item.category}: Rp${item.amount.toLocaleString('id-ID')}`);
+          } else {
+            const m = item.merchant || 'Pengeluaran';
+            await createExpense({
+              amount: item.amount,
+              merchant: m,
+              category: item.category as ExpenseCategory,
+              note: item.note || m,
+              createdAt: Timestamp.now(),
+              source: 'telegram_text',
+              confidence: item.confidence,
+              needsReview: false,
+              telegramUserId: userId,
+            });
+            await upsertMerchantCache(m, item.category as ExpenseCategory);
+            summaryLines.push(`• ${m}: Rp${item.amount.toLocaleString('id-ID')} (${item.category})`);
+          }
+        }
+
+        const responseMsg = `✅ ${validItems.length} Transaksi berhasil dicatat:\n\n${summaryLines.join('\n')}\n\nTotal: Rp${totalAmount.toLocaleString('id-ID')}`;
+        await ctx.reply(responseMsg);
+        return;
+      }
+
+      if (lines.length > 3) {
+        const analysis = await analyzeExpenseList(input, pool);
+        await ctx.reply(analysis);
+        return;
+      }
+    }
+
     const merchant = merchantFromText(input);
     const cachedCategory = await getCachedCategory(merchant);
     const parsed = cachedCategory
@@ -31,7 +86,6 @@ export function createMessageHandler(pool: GeminiKeyPool) {
       : await parseTransaction(input, pool);
 
     if (parsed.amount === null) {
-      const lines = input.split('\n').filter(l => l.trim());
       if (lines.length > 3) {
         const analysis = await analyzeExpenseList(input, pool);
         await ctx.reply(analysis);
@@ -57,3 +111,4 @@ export function createMessageHandler(pool: GeminiKeyPool) {
     await ctx.reply(`✅ Dicatat: ${parsed.merchant || merchant} - Rp${parsed.amount} (${parsed.category})`);
   };
 }
+
