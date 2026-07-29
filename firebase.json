@@ -1,5 +1,11 @@
 {
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "public",
+    "redirects": [
+      { "source": "**", "destination": "https://moneytor-dashboard.vercel.app", "type": 302 }
+    ]
   }
 }
