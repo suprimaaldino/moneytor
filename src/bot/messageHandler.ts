@@ -30,8 +30,13 @@ export function createMessageHandler(pool: GeminiKeyPool) {
       : await parseTransaction(input, pool);
 
     if (parsed.amount === null) {
-      ctx.session.pendingText = input;
-      await ctx.reply('Berapa nominalnya, kak?');
+      const lines = input.split('\n').filter(l => l.trim());
+      if (lines.length > 3) {
+        await ctx.reply('Terlalu banyak data. Kirim satu transaksi per pesan, ya.\n\nContoh: makan 25 ribu');
+      } else {
+        ctx.session.pendingText = input;
+        await ctx.reply('Berapa nominalnya, kak?');
+      }
       return;
     }
     if (parsed.confidence < 0.8 || parsed.category === 'unclear') {
