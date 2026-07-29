@@ -33,23 +33,32 @@ describe('parseTransaction', () => {
 
 
 describe('GeminiKeyPool', () => {
-  beforeEach(() => vi.resetModules());
+  beforeEach(() => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
 
   it('moves to the next key at the request threshold', async () => {
     let active = 'key-0';
     vi.doMock('../src/db/keyPoolState.js', () => ({
       resetKeyIfNewDay: vi.fn(),
-      getKeyState: vi.fn(async (label: string) => ({ keyLabel: label, requestCount: label === active ? 1400 : 0, lastReset: '2026-07-29' })),
+      getKeyState: vi.fn(async (label: string) => ({ keyLabel: label, requestCount: label === active ? 5000 : 0, lastReset: '2026-07-29' })),
       incrementKeyUsage: vi.fn(),
     }));
-    vi.doMock('@google/generative-ai', () => ({
-      GoogleGenerativeAI: class {
-        getGenerativeModel() { return { generateContent: async () => ({ response: { text: () => { active = 'key-1'; return '{"ok":true}'; } } }) }; }
-      },
-    }));
+
+    const mockFetch = vi.fn(async (url: string, options: Record<string, unknown>) => {
+      const body = JSON.parse(options.body as string);
+      if (body.messages[0].content === 'success') {
+        active = 'key-1';
+        return { ok: true, json: async () => ({ choices: [{ message: { content: '{"ok":true}' } }] }) };
+      }
+      return { ok: false, status: 500, text: async () => 'error' };
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
     const { GeminiKeyPool } = await import('../src/ai/geminiPool.js');
     const pool = new GeminiKeyPool(['one', 'two']);
-    await expect(pool.callWithFailover('test')).resolves.toBe('{"ok":true}');
+    await expect(pool.callWithFailover('success')).resolves.toBe('{"ok":true}');
     expect(active).toBe('key-1');
   });
 });
