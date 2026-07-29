@@ -7,7 +7,7 @@ type Response = { status: (code: number) => Response; json: (body: unknown) => v
 
 function adminApp() {
   if (getApps().length) return getApps()[0];
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const privateKey = (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n').replace(/^"/, '').replace(/"$/, '');
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) throw new Error('Firebase server environment is incomplete');
   return initializeApp({ credential: cert({ projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey }) });
 }
