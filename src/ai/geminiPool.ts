@@ -12,7 +12,7 @@ export class AllKeysExhaustedError extends Error {
 }
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:1.5b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'qwen3:4b';
 
 export class GeminiKeyPool {
   private readonly keys: string[];

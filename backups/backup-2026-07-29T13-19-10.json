@@ -1,0 +1,187 @@
+{
+  "expenses": [],
+  "income": [],
+  "key_pool_state": [
+    {
+      "id": "key-0",
+      "keyLabel": "key-0",
+      "lastReset": "2026-07-29",
+      "requestCount": 23
+    },
+    {
+      "id": "key-1",
+      "keyLabel": "key-1",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    },
+    {
+      "id": "key-2",
+      "keyLabel": "key-2",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    },
+    {
+      "id": "key-3",
+      "keyLabel": "key-3",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    },
+    {
+      "id": "key-4",
+      "keyLabel": "key-4",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    },
+    {
+      "id": "key-5",
+      "keyLabel": "key-5",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    },
+    {
+      "id": "key-6",
+      "keyLabel": "key-6",
+      "requestCount": 0,
+      "lastReset": "2026-07-29"
+    }
+  ],
+  "merchant_cache": [
+    {
+      "id": "bayar bni",
+      "merchant": "Bayar BNI",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar cicilan rumah",
+      "merchant": "Bayar cicilan rumah",
+      "defaultCategory": "bills",
+      "hitCount": 14
+    },
+    {
+      "id": "bayar gadai",
+      "merchant": "Bayar gadai",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar honest",
+      "merchant": "Bayar Honest",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar indodana",
+      "merchant": "Bayar Indodana",
+      "defaultCategory": "bills",
+      "hitCount": 14
+    },
+    {
+      "id": "bayar shopee",
+      "merchant": "Bayar Shopee",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar shopee bela",
+      "merchant": "Bayar Shopee Bela",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke bang ger",
+      "merchant": "Bayar utang ke Bang Ger",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke ibu linggau",
+      "merchant": "Bayar utang ke Ibu Linggau",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke indra",
+      "merchant": "Bayar utang ke Indra",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke king",
+      "merchant": "Bayar utang ke King",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke masdus",
+      "merchant": "Bayar utang ke Masdus",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke mega",
+      "merchant": "Bayar utang ke Mega",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke rara",
+      "merchant": "Bayar utang ke Rara",
+      "defaultCategory": "bills",
+      "hitCount": 11
+    },
+    {
+      "id": "bayar utang ke seli",
+      "merchant": "Bayar utang ke Seli",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang ke tyok",
+      "merchant": "Bayar utang ke Tyok",
+      "defaultCategory": "bills",
+      "hitCount": 9
+    },
+    {
+      "id": "bayar utang makmur",
+      "merchant": "Bayar utang Makmur",
+      "defaultCategory": "bills",
+      "hitCount": 11
+    },
+    {
+      "id": "bayar utang mega",
+      "merchant": "Bayar utang Mega",
+      "defaultCategory": "other",
+      "hitCount": 2
+    },
+    {
+      "id": "jatah ibu",
+      "merchant": "Jatah Ibu",
+      "defaultCategory": "other",
+      "hitCount": 9
+    }
+  ],
+  "account_links": [
+    {
+      "id": "TXB9d2loCsgMQ3Pwf69B82Cp0Rj1",
+      "firebaseUid": "TXB9d2loCsgMQ3Pwf69B82Cp0Rj1",
+      "email": "aldinoaja@gmail.com",
+      "telegramUserId": "5100924103",
+      "linkedAt": {
+        "_seconds": 1785322420,
+        "_nanoseconds": 64000000
+      }
+    }
+  ],
+  "link_codes": [
+    {
+      "id": "643830",
+      "telegramUserId": "5100924103",
+      "expiresAt": {
+        "_seconds": 1785322957,
+        "_nanoseconds": 977000000
+      },
+      "used": true
+    }
+  ]
+}
