@@ -72,8 +72,4 @@ export class GeminiKeyPool {
   private moveToNextKey(): void {
     this.activeIndex = (this.activeIndex + 1) % this.keys.length;
   }
-
-  private isRateLimitError(_error: unknown): boolean {
-    return false;
-  }
 }
