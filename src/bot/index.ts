@@ -8,6 +8,7 @@ import { monthCommand } from './commands/month.js';
 import { undoCommand } from './commands/undo.js';
 import { editCommand } from './commands/edit.js';
 import { incomeCommand } from './commands/income.js';
+import { linkCommand } from './commands/link.js';
 
 if (!process.env.TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is not configured');
 
@@ -23,6 +24,7 @@ bot.command('month', monthCommand);
 bot.command('undo', undoCommand);
 bot.command('edit', editCommand);
 bot.command('income', incomeCommand);
+bot.command('link', linkCommand);
 bot.on('message:text', createMessageHandler(geminiPool));
 
 if (process.env.NODE_ENV !== 'production') {

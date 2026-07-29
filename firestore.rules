@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsTelegramData() {
+      return signedIn()
+        && request.auth.token.telegramUserId != null
+        && resource.data.telegramUserId == request.auth.token.telegramUserId;
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if ownsTelegramData();
+      allow write: if false;
+    }
+
+    match /income/{incomeId} {
+      allow read: if ownsTelegramData();
+      allow write: if false;
+    }
+
+    match /account_links/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /link_codes/{code} {
+      allow read, write: if false;
+    }
+
+    match /merchant_cache/{merchantId} {
+      allow read, write: if false;
+    }
+
+    match /key_pool_state/{keyId} {
+      allow read, write: if false;
+    }
+  }
+}
