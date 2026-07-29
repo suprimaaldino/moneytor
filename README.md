@@ -54,6 +54,16 @@ Tambahkan secrets berikut di GitHub Repository → Settings → Secrets and vari
 
 Environment variables aplikasi seperti Telegram, Gemini, Firebase, dan webhook secret tetap disimpan di Vercel Project Settings, bukan di GitHub.
 
+Dashboard monitoring tersedia sebagai project Vercel terpisah dengan Root Directory `dashboard`. Aktifkan Google provider di Firebase Console → Authentication → Sign-in method, publish rules dengan `firebase deploy --only firestore:rules`, lalu isi environment variables dari `dashboard/.env.example` di project Vercel dashboard.
+
+Untuk CI/CD dashboard, tambahkan GitHub Secrets tambahan:
+
+- `DASHBOARD_VERCEL_TOKEN`
+- `DASHBOARD_VERCEL_ORG_ID`
+- `DASHBOARD_VERCEL_PROJECT_ID`
+
+Setiap push ke `main` akan memvalidasi dan deploy bot serta dashboard masing-masing.
+
 ## Command bot
 
 - `/start` — onboarding
@@ -62,6 +72,7 @@ Environment variables aplikasi seperti Telegram, Gemini, Firebase, dan webhook s
 - `/income 5000000 gaji bulanan` — catat pemasukan
 - `/undo` — hapus pengeluaran terakhir
 - `/edit amount 40000` atau `/edit category transport` — ubah pengeluaran terakhir
+- `/link` — dapatkan kode untuk menghubungkan akun Telegram ke dashboard
 
 Pesan teks biasa juga diproses, misalnya `Makan ayam geprek 35000`.
 

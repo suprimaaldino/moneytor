@@ -3,6 +3,5 @@ node_modules/
 .vercel
 *.log
 dist/
-
-.vercel
-.env*
+dashboard/*.tsbuildinfo
+.env.local

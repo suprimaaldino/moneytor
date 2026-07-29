@@ -67,6 +67,16 @@ Kategori pemasukan:
 
 ## Melihat laporan
 
+### Menghubungkan dashboard
+
+Kirim perintah berikut untuk mendapatkan kode linking dashboard:
+
+```text
+/link
+```
+
+Masukkan kode 6 angka yang diberikan bot setelah login dengan Google di dashboard. Kode berlaku 10 menit dan hanya dapat dipakai sekali.
+
 ### Laporan hari ini
 
 ```text

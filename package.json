@@ -7,7 +7,7 @@
     "dev": "tsx watch src/bot/index.ts",
     "build": "tsc",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "eslint api src scripts tests eslint.config.js",
     "set-webhook": "tsx scripts/setWebhook.ts"
   },
   "dependencies": {
