@@ -21,7 +21,8 @@ export async function parseTransaction(
     const json = response.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const parsed: unknown = JSON.parse(json);
     return validateParsedTransaction(parsed) ? parsed : fallback;
-  } catch {
+  } catch (error) {
+    console.error('parseTransaction error:', error);
     return fallback;
   }
 }

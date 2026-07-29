@@ -39,7 +39,10 @@ export class GeminiKeyPool {
         await incrementKeyUsage(keyLabel);
         return result.response.text();
       } catch (error) {
-        if (!this.isRateLimitError(error)) throw error;
+        if (!this.isRateLimitError(error)) {
+          console.error('callWithFailover error:', error);
+          throw error;
+        }
         this.moveToNextKey();
       }
     }
