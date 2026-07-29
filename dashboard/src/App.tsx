@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { getRedirectResult, onAuthStateChanged, signInWithRedirect, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import { auth, googleProvider } from './lib/firebase';
 import { getTransactions } from './lib/transactions';
 import { calculateSummary } from './lib/summary';
@@ -22,21 +22,22 @@ function formatRupiah(value: number): string {
 function Login(): ReactElement {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    getRedirectResult(auth).then((result) => {
-      if (!result) console.log('getRedirectResult: no pending redirect');
-      else console.log('getRedirectResult: user', result.user.email);
-    }).catch((err) => {
-      console.error('getRedirectResult error:', err);
-      setError(err?.code === 'auth/unauthorized-domain' ? 'Domain tidak diizinkan. Hubungi admin.' : 'Login gagal: ' + (err instanceof Error ? err.message : 'unknown'));
-    });
-  }, []);
   async function login(): Promise<void> {
     setBusy(true);
-    try { await signInWithRedirect(auth, googleProvider); }
-    catch (err) { setBusy(false); setError(err instanceof Error ? err.message : 'Gagal.'); }
+    setError('');
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string };
+      setBusy(false);
+      if (fbErr?.code === 'auth/popup-blocked') {
+        setError('Popup terblock. Izinkan popup untuk situs ini di browser, lalu coba lagi.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Login gagal.');
+      }
+    }
   }
-  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /></div><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p>{error && <p className="error-text">{error}</p>}<button className="primary-button" disabled={busy} onClick={login}>{busy ? 'Mengarahkan...' : 'Masuk dengan Google'}</button></section></main>;
+  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /></div><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p>{error && <p className="error-text">{error}</p>}<button className="primary-button" disabled={busy} onClick={login}>{busy ? 'Membuka...' : 'Masuk dengan Google'}</button></section></main>;
 }
 
 function LinkAccount({ user, onLinked }: { user: User; onLinked: () => void }): ReactElement {
