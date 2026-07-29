@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
+import { getRedirectResult, onAuthStateChanged, signInWithRedirect, signOut, type User } from 'firebase/auth';
 import { auth, googleProvider } from './lib/firebase';
 import { getTransactions } from './lib/transactions';
 import { calculateSummary } from './lib/summary';
@@ -20,7 +20,9 @@ function formatRupiah(value: number): string {
 }
 
 function Login(): ReactElement {
-  return <main className="center-page"><section className="login-card"><div className="brand-mark">M</div><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p><button className="primary-button" onClick={() => signInWithPopup(auth, googleProvider)}>Masuk dengan Google</button></section></main>;
+  const [error, setError] = useState('');
+  useEffect(() => { getRedirectResult(auth).catch(() => setError('Login gagal. Popup mungkin terblock.')); }, []);
+  return <main className="center-page"><section className="login-card"><div className="brand-mark">M</div><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p>{error && <p className="error-text">{error}</p>}<button className="primary-button" onClick={() => signInWithRedirect(auth, googleProvider)}>Masuk dengan Google</button></section></main>;
 }
 
 function LinkAccount({ user, onLinked }: { user: User; onLinked: () => void }): ReactElement {
