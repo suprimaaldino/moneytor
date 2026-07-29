@@ -36,7 +36,7 @@ function Login(): ReactElement {
     try { await signInWithRedirect(auth, googleProvider); }
     catch (err) { setBusy(false); setError(err instanceof Error ? err.message : 'Gagal.'); }
   }
-  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p>{error && <p className="error-text">{error}</p>}<button className="primary-button" disabled={busy} onClick={login}>{busy ? 'Mengarahkan...' : 'Masuk dengan Google'}</button></section></main>;
+  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /></div><h1>Moneytor</h1><p>Monitor pemasukan dan pengeluaran Anda.</p>{error && <p className="error-text">{error}</p>}<button className="primary-button" disabled={busy} onClick={login}>{busy ? 'Mengarahkan...' : 'Masuk dengan Google'}</button></section></main>;
 }
 
 function LinkAccount({ user, onLinked }: { user: User; onLinked: () => void }): ReactElement {
@@ -49,7 +49,7 @@ function LinkAccount({ user, onLinked }: { user: User; onLinked: () => void }): 
     setError('');
     try { await linkAccount(code); onLinked(); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Linking gagal.'); } finally { setBusy(false); }
   }
-  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /><h1>Hubungkan Moneytor</h1><p>Login sebagai <strong>{user.email}</strong>. Kirim <code>/link</code> ke bot Telegram untuk mendapatkan kode 6 angka.</p><form onSubmit={submit}><label htmlFor="link-code">Kode dari Telegram</label><input id="link-code" inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} placeholder="123456" /><button className="primary-button" disabled={busy || code.length !== 6}>{busy ? 'Menghubungkan...' : 'Hubungkan akun'}</button></form>{error && <p className="error-text">{error}</p>}</section></main>;
+  return <main className="center-page"><section className="login-card"><div className="brand-mark"><img src="/applogo.png" alt="Moneytor" className="logo-icon" /></div><h1>Hubungkan Moneytor</h1><p>Login sebagai <strong>{user.email}</strong>. Kirim <code>/link</code> ke bot Telegram untuk mendapatkan kode 6 angka.</p><form onSubmit={submit}><label htmlFor="link-code">Kode dari Telegram</label><input id="link-code" inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} placeholder="123456" /><button className="primary-button" disabled={busy || code.length !== 6}>{busy ? 'Menghubungkan...' : 'Hubungkan akun'}</button></form>{error && <p className="error-text">{error}</p>}</section></main>;
 }
 
 function Dashboard({ user }: { user: User }): ReactElement {
