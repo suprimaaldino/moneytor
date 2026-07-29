@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Context, SessionFlavor } from 'grammy';
 import { createExpense } from '../db/expenses.js';
 import { createIncome } from '../db/income.js';
@@ -11,10 +12,17 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 export interface ConversationSession {
   pendingText?: string;
+  lastInputHash?: string;
+  lastTotalAmount?: number;
+  lastItemCount?: number;
 }
 
 function merchantFromText(text: string): string {
   return text.replace(/\d[\d.,]*/g, '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 4).join(' ');
+}
+
+function hashInput(text: string): string {
+  return createHash('md5').update(text).digest('hex');
 }
 
 export function createMessageHandler(pool: GeminiKeyPool) {
@@ -25,6 +33,14 @@ export function createMessageHandler(pool: GeminiKeyPool) {
     const input = ctx.session.pendingText ? `${ctx.session.pendingText} ${text}` : text;
     ctx.session.pendingText = undefined;
 
+    const h = hashInput(input);
+    if (h === ctx.session.lastInputHash) {
+      const total = ctx.session.lastTotalAmount ?? 0;
+      const count = ctx.session.lastItemCount ?? 0;
+      await ctx.reply(`✅ Udah dicatat sebelumnya: ${count} item, Rp${total.toLocaleString('id-ID')}`);
+      return;
+    }
+
     const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length > 1) {
       const multiParsed = await parseMultiTransactions(input, pool);
@@ -33,12 +49,9 @@ export function createMessageHandler(pool: GeminiKeyPool) {
           t.amount !== null && t.amount > 0 && t.confidence >= 0.5 && t.category !== 'unclear'
       );
 
-
-
-
       if (validItems.length > 0) {
         let totalAmount = 0;
-        const summaryLines: string[] = [];
+        const catCount = new Map<string, number>();
 
         for (const item of validItems) {
           totalAmount += item.amount;
@@ -51,7 +64,7 @@ export function createMessageHandler(pool: GeminiKeyPool) {
               month: getWibMonth(),
               telegramUserId: userId,
             });
-            summaryLines.push(`• ${item.category}: Rp${item.amount.toLocaleString('id-ID')}`);
+            catCount.set(item.category, (catCount.get(item.category) ?? 0) + 1);
           } else {
             const m = item.merchant || 'Pengeluaran';
             await createExpense({
@@ -66,18 +79,23 @@ export function createMessageHandler(pool: GeminiKeyPool) {
               telegramUserId: userId,
             });
             await upsertMerchantCache(m, item.category as ExpenseCategory);
-            summaryLines.push(`• ${m}: Rp${item.amount.toLocaleString('id-ID')} (${item.category})`);
+            catCount.set(item.category, (catCount.get(item.category) ?? 0) + 1);
           }
         }
 
-        const responseMsg = `✅ ${validItems.length} Transaksi berhasil dicatat:\n\n${summaryLines.join('\n')}\n\nTotal: Rp${totalAmount.toLocaleString('id-ID')}`;
-        await ctx.reply(responseMsg);
+        const breakdown = [...catCount.entries()].map(([cat, n]) => `${cat}:${n}`).join(' | ');
+        await ctx.reply(`✅ ${validItems.length} transaksi | Rp${totalAmount.toLocaleString('id-ID')}\n${breakdown}`);
+
+        ctx.session.lastInputHash = h;
+        ctx.session.lastTotalAmount = totalAmount;
+        ctx.session.lastItemCount = validItems.length;
         return;
       }
 
       if (lines.length > 3) {
         const analysis = await analyzeExpenseList(input, pool);
         await ctx.reply(analysis);
+        ctx.session.lastInputHash = h;
         return;
       }
     }
@@ -106,12 +124,11 @@ export function createMessageHandler(pool: GeminiKeyPool) {
 
     if (parsed.type === 'income') {
       await createIncome({ amount: parsed.amount, source: parsed.category as IncomeCategory, note: parsed.note, createdAt: Timestamp.now(), month: getWibMonth(), telegramUserId: userId });
-      await ctx.reply(`✅ Dicatat: ${parsed.category} - Rp${parsed.amount}`);
+      await ctx.reply(`✅ ${parsed.category} Rp${parsed.amount}`);
       return;
     }
     await createExpense({ amount: parsed.amount, merchant: parsed.merchant || merchant, category: parsed.category as ExpenseCategory, note: parsed.note, createdAt: Timestamp.now(), source: 'telegram_text', confidence: parsed.confidence, needsReview: false, telegramUserId: userId });
     await upsertMerchantCache(parsed.merchant || merchant, parsed.category as ExpenseCategory);
-    await ctx.reply(`✅ Dicatat: ${parsed.merchant || merchant} - Rp${parsed.amount} (${parsed.category})`);
+    await ctx.reply(`✅ ${parsed.merchant || merchant} Rp${parsed.amount} (${parsed.category})`);
   };
 }
-
