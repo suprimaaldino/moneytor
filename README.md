@@ -64,3 +64,5 @@ Environment variables aplikasi seperti Telegram, Gemini, Firebase, dan webhook s
 - `/edit amount 40000` atau `/edit category transport` — ubah pengeluaran terakhir
 
 Pesan teks biasa juga diproses, misalnya `Makan ayam geprek 35000`.
+
+Panduan lengkap penggunaan bot tersedia di [BOT_GUIDE.md](BOT_GUIDE.md).
