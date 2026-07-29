@@ -2,6 +2,7 @@ import type { Context, SessionFlavor } from 'grammy';
 import { createExpense } from '../db/expenses.js';
 import { createIncome } from '../db/income.js';
 import { getCachedCategory, upsertMerchantCache } from '../db/merchantCache.js';
+import { analyzeExpenseList } from '../ai/analyzeList.js';
 import { parseTransaction } from '../ai/parseTransaction.js';
 import type { GeminiKeyPool } from '../ai/geminiPool.js';
 import type { ExpenseCategory, IncomeCategory } from '../types/index.js';
@@ -32,7 +33,8 @@ export function createMessageHandler(pool: GeminiKeyPool) {
     if (parsed.amount === null) {
       const lines = input.split('\n').filter(l => l.trim());
       if (lines.length > 3) {
-        await ctx.reply('Terlalu banyak data. Kirim satu transaksi per pesan, ya.\n\nContoh: makan 25 ribu');
+        const analysis = await analyzeExpenseList(input, pool);
+        await ctx.reply(analysis);
       } else {
         ctx.session.pendingText = input;
         await ctx.reply('Berapa nominalnya, kak?');
