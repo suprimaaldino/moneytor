@@ -4,7 +4,7 @@ import { createExpense } from '../db/expenses.js';
 import { createIncome } from '../db/income.js';
 import { getCachedCategory, upsertMerchantCache } from '../db/merchantCache.js';
 import { analyzeExpenseList } from '../ai/analyzeList.js';
-import { parseMultiTransactions, parseTransaction } from '../ai/parseTransaction.js';
+import { parseTransaction } from '../ai/parseTransaction.js';
 import type { GeminiKeyPool } from '../ai/geminiPool.js';
 import type { ExpenseCategory, IncomeCategory, ParsedTransaction } from '../types/index.js';
 import { getWibMonth } from '../utils/dateHelpers.js';
@@ -19,6 +19,17 @@ export interface ConversationSession {
 
 function merchantFromText(text: string): string {
   return text.replace(/\d[\d.,]*/g, '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 4).join(' ');
+}
+
+function amountFromText(text: string): number {
+  return Number(text.match(/\d[\d.,]*/)?.[0]?.replace(/[.,]/g, '') ?? 0);
+}
+
+function clampAmount(parsed: number, text: string): number {
+  const raw = amountFromText(text);
+  if (raw <= 0) return parsed;
+  if (parsed <= 0) return raw;
+  return Math.abs(parsed - raw) <= raw * 0.5 ? parsed : raw;
 }
 
 function hashInput(text: string): string {
@@ -43,52 +54,80 @@ export function createMessageHandler(pool: GeminiKeyPool) {
 
     const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length > 1) {
-      const multiParsed = await parseMultiTransactions(input, pool);
-      const validItems = multiParsed.filter(
-        (t): t is ParsedTransaction & { amount: number } =>
-          t.amount !== null && t.amount > 0 && t.confidence >= 0.5 && t.category !== 'unclear'
+      const merchants = lines.map(merchantFromText);
+      const cached = await Promise.all(merchants.map(getCachedCategory));
+
+      async function parseLine(line: string, m: string, cc: string | null): Promise<ParsedTransaction> {
+        const rawAmount = amountFromText(line);
+        if (cc) {
+          return { type: 'expense' as const, amount: rawAmount, category: cc, merchant: m, note: line, confidence: 1 };
+        }
+        const first = await parseTransaction(line, pool);
+        const safeAmount = first.amount ? clampAmount(first.amount, line) : rawAmount;
+        if (safeAmount > 0 && first.confidence >= 0.5 && first.category !== 'unclear') {
+          return { ...first, amount: safeAmount };
+        }
+        const second = await parseTransaction(line, pool);
+        const safeAmount2 = second.amount ? clampAmount(second.amount, line) : rawAmount;
+        return { ...second, amount: safeAmount2 };
+      }
+
+      const parsedResults = await Promise.all(
+        lines.map((line, i) => parseLine(line, merchants[i], cached[i])),
       );
 
-      if (validItems.length > 0) {
-        let totalAmount = 0;
-        const catCount = new Map<string, number>();
+      let totalAmount = 0;
+      const catCount = new Map<string, number>();
+      const failed: { line: string; i: number }[] = [];
 
-        for (const item of validItems) {
-          totalAmount += item.amount;
-          if (item.type === 'income') {
-            await createIncome({
-              amount: item.amount,
-              source: item.category as IncomeCategory,
-              note: item.note || item.merchant,
-              createdAt: Timestamp.now(),
-              month: getWibMonth(),
-              telegramUserId: userId,
-            });
-            catCount.set(item.category, (catCount.get(item.category) ?? 0) + 1);
-          } else {
-            const m = item.merchant || 'Pengeluaran';
-            await createExpense({
-              amount: item.amount,
-              merchant: m,
-              category: item.category as ExpenseCategory,
-              note: item.note || m,
-              createdAt: Timestamp.now(),
-              source: 'telegram_text',
-              confidence: item.confidence,
-              needsReview: false,
-              telegramUserId: userId,
-            });
-            await upsertMerchantCache(m, item.category as ExpenseCategory);
-            catCount.set(item.category, (catCount.get(item.category) ?? 0) + 1);
-          }
+      for (let i = 0; i < parsedResults.length; i++) {
+        const parsed = parsedResults[i];
+        if (parsed.amount === null || parsed.amount <= 0 || parsed.confidence < 0.5 || parsed.category === 'unclear') {
+          failed.push({ line: lines[i], i });
+          continue;
         }
 
+        totalAmount += parsed.amount;
+        if (parsed.type === 'income') {
+          await createIncome({
+            amount: parsed.amount,
+            source: parsed.category as IncomeCategory,
+            note: parsed.note || parsed.merchant,
+            createdAt: Timestamp.now(),
+            month: getWibMonth(),
+            telegramUserId: userId,
+          });
+          catCount.set(parsed.category, (catCount.get(parsed.category) ?? 0) + 1);
+        } else {
+          const m = parsed.merchant || merchants[i] || 'Pengeluaran';
+          await createExpense({
+            amount: parsed.amount,
+            merchant: m,
+            category: parsed.category as ExpenseCategory,
+            note: parsed.note || m,
+            createdAt: Timestamp.now(),
+            source: 'telegram_text',
+            confidence: parsed.confidence,
+            needsReview: false,
+            telegramUserId: userId,
+          });
+          await upsertMerchantCache(m, parsed.category as ExpenseCategory);
+          catCount.set(parsed.category, (catCount.get(parsed.category) ?? 0) + 1);
+        }
+      }
+
+      const successCount = [...catCount.values()].reduce((a, b) => a + b, 0);
+      if (successCount > 0) {
         const breakdown = [...catCount.entries()].map(([cat, n]) => `${cat}:${n}`).join(' | ');
-        await ctx.reply(`✅ ${validItems.length} transaksi | Rp${totalAmount.toLocaleString('id-ID')}\n${breakdown}`);
+        let reply = `✅ ${successCount} transaksi | Rp${totalAmount.toLocaleString('id-ID')}\n${breakdown}`;
+        if (failed.length > 0) {
+          reply += `\n\n❌ ${failed.length} gagal diparse:\n${failed.map(f => f.line).join('\n')}`;
+        }
+        await ctx.reply(reply);
 
         ctx.session.lastInputHash = h;
         ctx.session.lastTotalAmount = totalAmount;
-        ctx.session.lastItemCount = validItems.length;
+        ctx.session.lastItemCount = successCount;
         return;
       }
 
@@ -102,9 +141,13 @@ export function createMessageHandler(pool: GeminiKeyPool) {
 
     const merchant = merchantFromText(input);
     const cachedCategory = await getCachedCategory(merchant);
-    const parsed = cachedCategory
-      ? { type: 'expense' as const, amount: Number(input.match(/\d[\d.,]*/)?.[0]?.replace(/[.,]/g, '') ?? 0), category: cachedCategory, merchant, note: input, confidence: 1 }
-      : await parseTransaction(input, pool);
+    let parsed: ParsedTransaction;
+    if (cachedCategory) {
+      parsed = { type: 'expense' as const, amount: amountFromText(input), category: cachedCategory, merchant, note: input, confidence: 1 };
+    } else {
+      const p = await parseTransaction(input, pool);
+      parsed = { ...p, amount: p.amount ? clampAmount(p.amount, input) : amountFromText(input) };
+    }
 
     if (parsed.amount === null) {
       if (lines.length > 3) {

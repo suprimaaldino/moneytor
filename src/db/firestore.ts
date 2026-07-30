@@ -1,5 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
+
 import { getFirestore } from 'firebase-admin/firestore';
 
 const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY ?? '';

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/bot/index.ts",
+    "emulators": "firebase emulators:start --only firestore",
     "build": "tsc",
     "test": "vitest run",
     "lint": "eslint api src scripts tests eslint.config.js",
