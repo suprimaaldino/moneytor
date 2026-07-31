@@ -32,7 +32,7 @@ describe('parseTransaction', () => {
 });
 
 
-describe('GeminiKeyPool', () => {
+describe('AIProviderPool', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
@@ -56,8 +56,8 @@ describe('GeminiKeyPool', () => {
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    const { GeminiKeyPool } = await import('../src/ai/geminiPool.js');
-    const pool = new GeminiKeyPool(['one', 'two']);
+    const { AIProviderPool } = await import('../src/ai/aiPool.js');
+    const pool = new AIProviderPool(['one', 'two']);
     await expect(pool.callWithFailover('success')).resolves.toBe('{"ok":true}');
     expect(active).toBe('key-1');
   });

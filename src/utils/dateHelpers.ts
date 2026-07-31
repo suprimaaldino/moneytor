@@ -1,4 +1,3 @@
-const PACIFIC_TIME_ZONE = 'America/Los_Angeles';
 const WIB_TIME_ZONE = 'Asia/Jakarta';
 
 function dateInTimeZone(timeZone: string, date = new Date()): string {
@@ -8,10 +7,6 @@ function dateInTimeZone(timeZone: string, date = new Date()): string {
     month: '2-digit',
     day: '2-digit',
   }).format(date);
-}
-
-export function getPacificDate(date = new Date()): string {
-  return dateInTimeZone(PACIFIC_TIME_ZONE, date);
 }
 
 export function getWibDate(date = new Date()): string {

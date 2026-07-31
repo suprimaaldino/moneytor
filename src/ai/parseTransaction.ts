@@ -1,7 +1,7 @@
 import type { ParsedTransaction } from '../types/index.js';
 import { BATCH_TRANSACTION_PARSE_PROMPT, TRANSACTION_PARSE_PROMPT } from './prompts.js';
 import { validateParsedTransaction } from '../utils/validation.js';
-import type { GeminiKeyPool } from './geminiPool.js';
+import type { AIProviderPool } from './aiPool.js';
 
 const fallback: ParsedTransaction = {
   type: 'expense',
@@ -21,12 +21,17 @@ function extractJson(response: string, isArray: boolean): string {
 
 export async function parseTransaction(
   text: string,
-  pool: GeminiKeyPool,
+  pool: AIProviderPool,
 ): Promise<ParsedTransaction> {
   try {
     const response = await pool.callWithFailover(`${TRANSACTION_PARSE_PROMPT}${text}`);
-    const json = extractJson(response, false);
-    const parsed: unknown = JSON.parse(json);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractJson(response, false));
+    } catch (parseError) {
+      console.error('parseTransaction JSON parse failed. Raw AI response:', response);
+      throw parseError;
+    }
     return validateParsedTransaction(parsed) ? parsed : fallback;
   } catch (error) {
     console.error('parseTransaction error:', error);
@@ -36,12 +41,17 @@ export async function parseTransaction(
 
 export async function parseMultiTransactions(
   text: string,
-  pool: GeminiKeyPool,
+  pool: AIProviderPool,
 ): Promise<ParsedTransaction[]> {
   try {
     const response = await pool.callWithFailover(`${BATCH_TRANSACTION_PARSE_PROMPT}${text}`);
-    const json = extractJson(response, true);
-    const parsed: unknown = JSON.parse(json);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractJson(response, true));
+    } catch (parseError) {
+      console.error('parseMultiTransactions JSON parse failed. Raw AI response:', response);
+      throw parseError;
+    }
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(validateParsedTransaction);
   } catch (error) {

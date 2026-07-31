@@ -5,13 +5,15 @@ import { createIncome } from '../db/income.js';
 import { getCachedCategory, upsertMerchantCache } from '../db/merchantCache.js';
 import { analyzeExpenseList } from '../ai/analyzeList.js';
 import { parseTransaction } from '../ai/parseTransaction.js';
-import type { GeminiKeyPool } from '../ai/geminiPool.js';
+import type { AIProviderPool } from '../ai/aiPool.js';
 import type { ExpenseCategory, IncomeCategory, ParsedTransaction } from '../types/index.js';
 import { getWibMonth } from '../utils/dateHelpers.js';
 import { Timestamp } from 'firebase-admin/firestore';
+import { CONFIDENCE_LOW_THRESHOLD, CONFIDENCE_HIGH_THRESHOLD } from '../utils/constants.js';
 
 export interface ConversationSession {
   pendingText?: string;
+  confirmUndo?: boolean;
   lastInputHash?: string;
   lastTotalAmount?: number;
   lastItemCount?: number;
@@ -36,11 +38,12 @@ function hashInput(text: string): string {
   return createHash('md5').update(text).digest('hex');
 }
 
-export function createMessageHandler(pool: GeminiKeyPool) {
+export function createMessageHandler(pool: AIProviderPool) {
   return async (ctx: Context & SessionFlavor<ConversationSession>): Promise<void> => {
     const text = ctx.message && 'text' in ctx.message ? (ctx.message.text ?? '').trim() : '';
     if (!text) return;
     const userId = String(ctx.from?.id ?? '');
+    ctx.session.confirmUndo = false;
     const input = ctx.session.pendingText ? `${ctx.session.pendingText} ${text}` : text;
     ctx.session.pendingText = undefined;
 
@@ -64,7 +67,7 @@ export function createMessageHandler(pool: GeminiKeyPool) {
         }
         const first = await parseTransaction(line, pool);
         const safeAmount = first.amount ? clampAmount(first.amount, line) : rawAmount;
-        if (safeAmount > 0 && first.confidence >= 0.5 && first.category !== 'unclear') {
+        if (safeAmount > 0 && first.confidence >= CONFIDENCE_LOW_THRESHOLD && first.category !== 'unclear') {
           return { ...first, amount: safeAmount };
         }
         const second = await parseTransaction(line, pool);
@@ -82,7 +85,7 @@ export function createMessageHandler(pool: GeminiKeyPool) {
 
       for (let i = 0; i < parsedResults.length; i++) {
         const parsed = parsedResults[i];
-        if (parsed.amount === null || parsed.amount <= 0 || parsed.confidence < 0.5 || parsed.category === 'unclear') {
+        if (parsed.amount === null || parsed.amount <= 0 || parsed.confidence < CONFIDENCE_LOW_THRESHOLD || parsed.category === 'unclear') {
           failed.push({ line: lines[i], i });
           continue;
         }
@@ -159,7 +162,7 @@ export function createMessageHandler(pool: GeminiKeyPool) {
       }
       return;
     }
-    if (parsed.confidence < 0.8 || parsed.category === 'unclear') {
+    if (parsed.confidence < CONFIDENCE_HIGH_THRESHOLD || parsed.category === 'unclear') {
       ctx.session.pendingText = input;
       await ctx.reply('Kategorinya apa nih — food/transport/bills/shopping/health/entertainment/other?');
       return;

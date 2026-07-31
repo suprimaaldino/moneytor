@@ -1,9 +1,9 @@
 import { ANALYZE_LIST_PROMPT } from './prompts.js';
-import { AllKeysExhaustedError, type GeminiKeyPool } from './geminiPool.js';
+import { AllKeysExhaustedError, type AIProviderPool } from './aiPool.js';
 
 export async function analyzeExpenseList(
   text: string,
-  pool: GeminiKeyPool,
+  pool: AIProviderPool,
 ): Promise<string> {
   try {
     const response = await pool.callWithFailover(`${ANALYZE_LIST_PROMPT}\n\n${text}`);

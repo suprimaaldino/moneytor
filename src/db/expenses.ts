@@ -33,6 +33,11 @@ export function getExpensesThisMonth(userId: string): Promise<ExpenseRecord[]> {
   return getExpensesInRange(userId, start, end);
 }
 
+export async function hasLastExpense(userId: string): Promise<boolean> {
+  const snapshot = await collection.where('telegramUserId', '==', userId).orderBy('createdAt', 'desc').limit(1).get();
+  return !snapshot.empty;
+}
+
 export async function deleteLastExpense(userId: string): Promise<boolean> {
   const snapshot = await collection.where('telegramUserId', '==', userId).orderBy('createdAt', 'desc').limit(1).get();
   if (snapshot.empty) return false;
